@@ -17,6 +17,7 @@ async function run(){
      try{
           await client.connect()
           const toolsCollection = client.db('manufacture').collection('tools')
+          const orderCollection = client.db('manufacture').collection('orders')
           app.get('/tools' , async(req, res)=>{
                const query = {}
                const cursor = toolsCollection.find(query)
@@ -30,6 +31,11 @@ async function run(){
                const tools = await toolsCollection.findOne(query)
                res.send(tools)
          
+             })
+             app.post('/order' , async(req,res)=>{
+               const newOrder = req.body;
+               const result = await orderCollection.insertOne(newOrder)
+               res.send(result)
              })
      }
      finally{
