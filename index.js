@@ -18,6 +18,7 @@ async function run(){
           await client.connect()
           const toolsCollection = client.db('manufacture').collection('tools')
           const orderCollection = client.db('manufacture').collection('orders')
+          const reviewCollection = client.db('manufacture').collection('review')
           app.get('/tools' , async(req, res)=>{
                const query = {}
                const cursor = toolsCollection.find(query)
@@ -35,6 +36,18 @@ async function run(){
              app.post('/order' , async(req,res)=>{
                const newOrder = req.body;
                const result = await orderCollection.insertOne(newOrder)
+               res.send(result)
+             })
+             app.get('/order' , async(req,res)=>{
+                  const email = req.query.email
+                  const query ={ email:email}
+                  const cursor = orderCollection.find(query)
+                  const order = await cursor.toArray()
+                  res.send(order)
+             })
+             app.post('/review' , async(req,res)=>{
+               const newReview = req.body ;
+               const result = await reviewCollection.insertOne(newReview)
                res.send(result)
              })
      }
