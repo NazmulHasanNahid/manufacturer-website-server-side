@@ -25,7 +25,11 @@ async function run(){
                const tools = await cursor.toArray()
                res.send(tools)
           })
-
+          app.post('/tools' , async(req,res)=>{
+               const newTools = req.body ;
+               const result = await toolsCollection.insertOne(newTools)
+               res.send(result)
+             })
           app.get('/tools/:id' , async(req,res)=>{
                const id = req.params.id;
                const query = {_id: ObjectId(id)};
@@ -50,6 +54,12 @@ async function run(){
                const result = await reviewCollection.insertOne(newReview)
                res.send(result)
              })
+             app.get('/reviews' , async(req,res)=>{
+               const query = {}
+               const cursor = reviewCollection.find(query)
+               const reviews = await cursor.toArray()
+               res.send(reviews)
+          })
      }
      finally{
           //await client.close()
