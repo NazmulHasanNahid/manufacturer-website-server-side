@@ -19,6 +19,7 @@ async function run(){
           const toolsCollection = client.db('manufacture').collection('tools')
           const orderCollection = client.db('manufacture').collection('orders')
           const reviewCollection = client.db('manufacture').collection('review')
+          const userCollection = client.db('manufacture').collection('user')
           app.get('/tools' , async(req, res)=>{
                const query = {}
                const cursor = toolsCollection.find(query)
@@ -59,6 +60,18 @@ async function run(){
                const cursor = reviewCollection.find(query)
                const reviews = await cursor.toArray()
                res.send(reviews)
+          })
+          app.put('/user/:email', async(req,res)=>{
+               const email = req.params.email;
+               const user = req.body;
+               const filter = { email: email };
+               const options = { upsert: true };
+               const updateDoc = {
+                 $set: user,
+               };
+               const result = await userCollection.updateOne(filter, updateDoc, options);
+               // const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+               res.send({ result, token });
           })
      }
      finally{
