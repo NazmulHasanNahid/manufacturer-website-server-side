@@ -38,7 +38,7 @@ async function run(){
           const orderCollection = client.db('manufacture').collection('orders')
           const reviewCollection = client.db('manufacture').collection('review')
           const userCollection = client.db('manufacture').collection('user')
-          app.get('/tools' , verifyJWT, async(req, res)=>{
+          app.get('/tools' ,  async(req, res)=>{
                const query = {}
                const cursor = toolsCollection.find(query)
                const tools = await cursor.toArray()
@@ -61,26 +61,52 @@ async function run(){
                const result = await orderCollection.insertOne(newOrder)
                res.send(result)
              })
-             app.get('/order' , verifyJWT, async(req,res)=>{
+             app.get('/order' , verifyJWT,  async(req,res)=>{
                   const email = req.query.email
-                  
-                  console.log('authHeader' , authorization);
-                  const query ={ email:email}
-                  const cursor = orderCollection.find(query)
-                  const order = await cursor.toArray()
-                  res.send(order)
+                  const decodedEmail = req.decoded.email
+                  if(email === decodedEmail){
+
+                       const query ={ email:email}
+                       const cursor = orderCollection.find(query)
+                       const order = await cursor.toArray()
+                       return res.send(order)
+                  }
+                else{
+                    return res.status(403).send({ message: 'Forbidden access' })
+                }
              })
              app.post('/review' , async(req,res)=>{
                const newReview = req.body ;
                const result = await reviewCollection.insertOne(newReview)
                res.send(result)
              })
-             app.get('/reviews', verifyJWT , async(req,res)=>{
+             app.get('/reviews',  async(req,res)=>{
                const query = {}
                const cursor = reviewCollection.find(query)
                const reviews = await cursor.toArray()
                res.send(reviews)
           })
+          //admin
+          app.put('/user/admin/:email', verifyJWT, async (req, res) => {
+               const email = req.params.email;
+               const requester = req.decoded.email;
+               const requesterAccount = await userCollection.findOne({ email: requester });
+               if (requesterAccount.role === 'admin') {
+                 const filter = { email: email };
+                 const updateDoc = {
+                   $set: { role: 'admin' },
+                 };
+                 const result = await userCollection.updateOne(filter, updateDoc);
+                 res.send(result);
+               }
+               else{
+                 res.status(403).send({message: 'forbidden'});
+               }
+         
+             })
+
+          //user collect
+
           app.put('/user/:email', async(req,res)=>{
                const email = req.params.email;
                const user = req.body;
@@ -92,6 +118,10 @@ async function run(){
                const result = await userCollection.updateOne(filter, updateDoc, options);
                const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
                res.send({ result, token });
+          })
+          app.get('/user' , verifyJWT , async(req,res)=>{
+               const users = await userCollection.find().toArray()
+               res.send(users)
           })
      }
      finally{
