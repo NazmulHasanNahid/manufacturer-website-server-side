@@ -14,6 +14,23 @@ app.use(express.json())
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.wwafz.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+
+
+function verifyJWT(req, res, next) {
+     const authHeader = req.headers.authorization;
+     if (!authHeader) {
+       return res.status(401).send({ message: 'UnAuthorized access' });
+     }
+     const token = authHeader.split(' ')[1];
+     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+       if (err) {
+         return res.status(403).send({ message: 'Forbidden access' })
+       }
+       req.decoded = decoded;
+       next();
+     });
+   }
+
 async function run(){
      try{
           await client.connect()
@@ -21,7 +38,7 @@ async function run(){
           const orderCollection = client.db('manufacture').collection('orders')
           const reviewCollection = client.db('manufacture').collection('review')
           const userCollection = client.db('manufacture').collection('user')
-          app.get('/tools' , async(req, res)=>{
+          app.get('/tools' , verifyJWT, async(req, res)=>{
                const query = {}
                const cursor = toolsCollection.find(query)
                const tools = await cursor.toArray()
@@ -44,8 +61,10 @@ async function run(){
                const result = await orderCollection.insertOne(newOrder)
                res.send(result)
              })
-             app.get('/order' , async(req,res)=>{
+             app.get('/order' , verifyJWT, async(req,res)=>{
                   const email = req.query.email
+                  
+                  console.log('authHeader' , authorization);
                   const query ={ email:email}
                   const cursor = orderCollection.find(query)
                   const order = await cursor.toArray()
@@ -56,7 +75,7 @@ async function run(){
                const result = await reviewCollection.insertOne(newReview)
                res.send(result)
              })
-             app.get('/reviews' , async(req,res)=>{
+             app.get('/reviews', verifyJWT , async(req,res)=>{
                const query = {}
                const cursor = reviewCollection.find(query)
                const reviews = await cursor.toArray()
