@@ -170,10 +170,23 @@ async function run() {
 
 
    //profile
-   app.post("/tools", async (req, res) => {
-    const newTools = req.body;
-    const result = await toolsCollection.insertOne(newTools);
+   app.post("/profile", async (req, res) => {
+    const profile = req.body;
+    const result = await profileCollection.insertOne(profile);
     res.send(result);
+  });
+
+  app.get("/profile", verifyJWT, async (req, res) => {
+    const email = req.query.email;
+    const decodedEmail = req.decoded.email;
+    if (email === decodedEmail) {
+      const query = { email: email };
+      const cursor = profileCollection.find(query);
+      const profile = await cursor.toArray();
+      return res.send(profile);
+    } else {
+      return res.status(403).send({ message: "Forbidden access" });
+    }
   });
    //payment
    app.post("/create-payment-intent", verifyJWT,  async (req, res) => {
