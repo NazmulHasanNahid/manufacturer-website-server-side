@@ -3,6 +3,7 @@ const app = express();
 const port = process.env.PORT || 5000;
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 
@@ -40,6 +41,7 @@ async function run() {
     const orderCollection = client.db("manufacture").collection("orders");
     const reviewCollection = client.db("manufacture").collection("review");
     const userCollection = client.db("manufacture").collection("user");
+    const profileCollection = client.db("manufacture").collection("profile");
     app.get("/tools", async (req, res) => {
       const query = {};
       const cursor = toolsCollection.find(query);
@@ -81,8 +83,14 @@ async function run() {
         return res.status(403).send({ message: "Forbidden access" });
       }
     });
-     
-    app.post("/category", async (req, res) => {
+    //payment
+     app.get('/payment/:id' ,verifyJWT, async(req,res)=>{
+       const id = req.params.id
+       const query = {_id:ObjectId(id)}
+       const payment = await orderCollection.findOne(query)
+       res.send(payment)
+     })
+    app.post("/category",  async (req, res) => {
      const newCategory = req.body;
      const result = await categoriesCollection.insertOne(newCategory);
      res.send(result);
@@ -104,7 +112,7 @@ async function run() {
       const reviews = await cursor.toArray();
       res.send(reviews);
     });
-``
+
 
 
     //admin
@@ -139,7 +147,7 @@ async function run() {
       const token = jwt.sign(
         { email: email },
         process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: "1h" }
+        { expiresIn: "3h" }
       );
       res.send({ result, token });
     });
@@ -159,6 +167,42 @@ async function run() {
      const isAdmin = user.role === 'admin';
      res.send({admin: isAdmin})
    })
+
+
+   //profile
+   app.post("/tools", async (req, res) => {
+    const newTools = req.body;
+    const result = await toolsCollection.insertOne(newTools);
+    res.send(result);
+  });
+   //payment
+   app.post("/create-payment-intent", verifyJWT,  async (req, res) => {
+    const service = req.body;
+    const price = service.price;
+    console.log(price);
+    const amount = price*100;  
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount ,
+      currency: "usd",
+      payment_method_types:['card']
+    });
+   console.log('data',paymentIntent);
+    res.send({
+      clientSecret: paymentIntent.client_secret,
+      
+    });
+  });
+  
+
+
+
+
+
+
+
+
+
+
   } finally {
     //await client.close()
   }
