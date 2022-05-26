@@ -232,15 +232,6 @@ async function run() {
   });
   
 
-
-
-
-
-
-
-
-
-
   } finally {
     //await client.close()
   }
@@ -254,3 +245,5 @@ app.get("/", (req, res) => {
 app.listen(port, () => {
   console.log("listening to the port", port);
 });
+
+//
