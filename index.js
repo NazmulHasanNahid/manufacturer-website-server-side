@@ -176,7 +176,12 @@ async function run() {
      res.send({admin: isAdmin})
    })
 
-
+   app.delete('/user/:id' , async(req,res)=>{
+    const id = req.params.id ;
+    const query = {_id: ObjectId(id)}
+    const result  = await userCollection.deleteOne(query)
+    res.send(result)
+  })
    //profile
    app.post("/profile", async (req, res) => {
     const profile = req.body;
@@ -246,4 +251,3 @@ app.listen(port, () => {
   console.log("listening to the port", port);
 });
 
-//
