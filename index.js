@@ -6,7 +6,7 @@ const cors = require("cors");
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
-
+console.log(process.env.STRIPE_SECRET_KEY);
 
 app.use(cors());
 app.use(express.json());
@@ -42,6 +42,7 @@ async function run() {
     const reviewCollection = client.db("manufacture").collection("review");
     const userCollection = client.db("manufacture").collection("user");
     const profileCollection = client.db("manufacture").collection("profile");
+    const paymentCollection = client.db("manufacture").collection("payment");
     app.get("/tools", async (req, res) => {
       const query = {};
       const cursor = toolsCollection.find(query);
@@ -66,11 +67,18 @@ async function run() {
       const tools = await toolsCollection.findOne(query);
       res.send(tools);
     });
+    //manage order
     app.post("/order", async (req, res) => {
       const newOrder = req.body;
       const result = await orderCollection.insertOne(newOrder);
       res.send(result);
     });
+    app.delete('/order/:id' , async(req,res)=>{
+      const id = req.params.id ;
+      const query = {_id: ObjectId(id)}
+      const result  = await orderCollection.deleteOne(query)
+      res.send(result)
+    })
     app.get("/order", verifyJWT, async (req, res) => {
       const email = req.query.email;
       const decodedEmail = req.decoded.email;
@@ -188,12 +196,29 @@ async function run() {
       return res.status(403).send({ message: "Forbidden access" });
     }
   });
+  
+
+  app.patch('/booking/:id' , verifyJWT ,  async(req,res) =>{
+    const id  = req.params.id;
+    const payment = req.body;
+    const filter = {_id: ObjectId(id)};
+    const updatedDoc = {
+      $set: {
+        paid: true,
+        transactionId: payment.transactionId
+      }
+    }
+    const result = await paymentCollection.insertOne(payment)
+    const updatedBooking = await  orderCollection.updateOne(filter , updatedDoc)
+    res.send(updatedDoc)
+  })
+  
    //payment
-   app.post("/create-payment-intent", verifyJWT,  async (req, res) => {
+   app.post("/create-payment-intent",   async (req, res) => {
     const service = req.body;
     const price = service.price;
     console.log(price);
-    const amount = price*100;  
+    const amount = parseInt(price*100) ;  
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount ,
       currency: "usd",
